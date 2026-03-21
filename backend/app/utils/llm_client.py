@@ -29,14 +29,15 @@ class LLMClient:
         
         self.client = OpenAI(
             api_key=self.api_key,
-            base_url=self.base_url
+            base_url=self.base_url,
+            timeout=900.0  # 15분: 16000토큰 생성 커버, 무한대기 방지
         )
     
     def chat(
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.7,
-        max_tokens: int = 4096,
+        max_tokens: int = 16000,
         response_format: Optional[Dict] = None
     ) -> str:
         """
@@ -63,6 +64,8 @@ class LLMClient:
         
         response = self.client.chat.completions.create(**kwargs)
         content = response.choices[0].message.content
+        if content is None:
+            return None
         # 일부 모델(예: MiniMax M2.5)은 content에 <think>를 포함하므로 제거
         content = re.sub(r'<think>[\s\S]*?</think>', '', content).strip()
         return content
@@ -71,7 +74,7 @@ class LLMClient:
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.3,
-        max_tokens: int = 4096
+        max_tokens: int = 16000
     ) -> Dict[str, Any]:
         """
         채팅 요청을 전송하고 JSON으로 반환합니다.
@@ -90,6 +93,8 @@ class LLMClient:
             max_tokens=max_tokens,
             response_format={"type": "json_object"}
         )
+        if response is None:
+            raise ValueError("LLM이 빈 응답을 반환했습니다 (content=None)")
         # 마크다운 코드 블록 표기 제거
         cleaned_response = response.strip()
         cleaned_response = re.sub(r'^```(?:json)?\s*\n?', '', cleaned_response, flags=re.IGNORECASE)

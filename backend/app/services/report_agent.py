@@ -1171,14 +1171,15 @@ class ReportAgent:
             tools_description=self._get_tools_description(),
         )
 
-        # prompt - 완료섹션4000
+        # prompt - 완료섹션 (max_tokens=16000 기준 섹션당 8000자, 총 24000자 제한)
         if previous_sections:
             previous_parts = []
             for sec in previous_sections:
-                # 섹션4000
-                truncated = sec[:4000] + "..." if len(sec) > 4000 else sec
+                truncated = sec[:8000] + "..." if len(sec) > 8000 else sec
                 previous_parts.append(truncated)
             previous_content = "\n\n---\n\n".join(previous_parts)
+            if len(previous_content) > 24000:
+                previous_content = "(앞 내용 생략...)\n\n" + previous_content[-24000:]
         else:
             previous_content = "(이전에 작성된 섹션 없음)"
         
@@ -1215,7 +1216,7 @@ class ReportAgent:
             response = self.llm.chat(
                 messages=messages,
                 temperature=0.5,
-                max_tokens=4096
+                max_tokens=16000
             )
 
             #  LLM 반환 None(API )
@@ -1418,7 +1419,7 @@ class ReportAgent:
         response = self.llm.chat(
             messages=messages,
             temperature=0.5,
-            max_tokens=4096
+            max_tokens=16000
         )
 
         #  LLM 반환 None
